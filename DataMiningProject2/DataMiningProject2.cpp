@@ -245,6 +245,6 @@ vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfCluster
         }
     }
 
-    return centers; // or return membership too if needed
+    return centers;
 }
 
