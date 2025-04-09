@@ -12,6 +12,7 @@ using namespace std;
 vector<vector<double>> getData(string fileName);
 vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfClusters, int maxNumOfIterations);
 double squaredDistance(vector<double>& x, vector<double>& y);
+vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfClusters, int maxIterations);
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -24,6 +25,15 @@ int main(int argc, char* argv[]) {
     //1. K Means Clustering
     vector<vector<double>> cluster = KMeansClustering(data,2,100);
     //2. Fuzzy Logic
+    cout << endl << endl << "Fuzzy Logic" << endl;
+    cluster = FuzzyLogic(data, 3, 100);
+    for (int i = 0; i < cluster.size(); i++) {
+        cout << "Cluster " << i << ": ";
+        for (int j = 0; j < cluster[0].size(); j++) {
+            cout << cluster[i][j] << " ";
+        }
+        cout << endl;
+    }
 }
 
 vector<vector<double>> getData(string fileName) {
@@ -124,7 +134,7 @@ vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfC
         //check if they changed
         bool converged = true;
         for (int h = 0; h < numOfClusters; h++) {
-            if (squaredDistance(newClusters[h], clusters[h]) > 1e-6) {
+            if (squaredDistance(newClusters[h], clusters[h]) > .001) {
                 converged = false;
                 break;
             }
@@ -167,5 +177,74 @@ double squaredDistance(vector<double>& x, vector<double>& y) {
         return NULL;
     }
     return dist;
+}
+vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfClusters, int maxIterations) {
+    int numOfInstances = data.size();
+    int sizeOfInstance = data[0].size();
+    double m = numOfClusters;
+    // Initialize fuzzy membership matrix
+    vector<vector<double>> membership(numOfInstances, vector<double>(numOfClusters));
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0.0, 1.0);
+
+    for (int i = 0; i < numOfInstances; i++) {
+        double sum = 0.0;
+        for (int j = 0; j < numOfClusters; j++) {
+            membership[i][j] = dis(gen);
+            sum += membership[i][j];
+        }
+        for (int j = 0; j < numOfClusters; j++) {
+            membership[i][j] /= sum;
+        }
+    }
+
+    vector<vector<double>> centers(numOfClusters, vector<double>(sizeOfInstance, 0.0));
+
+    for (int iter = 0; iter < maxIterations; iter++) {
+        // Update cluster centers
+        for (int j = 0; j < numOfClusters; j++) {
+            vector<double> numerator(sizeOfInstance, 0.0);
+            double denominator = 0.0;
+
+            for (int i = 0; i < numOfInstances; i++) {
+                double u_ij_m = pow(membership[i][j], m);
+                for (int k = 0; k < sizeOfInstance; k++) {
+                    numerator[k] += u_ij_m * data[i][k];
+                }
+                denominator += u_ij_m;
+            }
+
+            for (int k = 0; k < sizeOfInstance; k++) {
+                centers[j][k] = numerator[k] / denominator;
+            }
+        }
+
+        // Update membership matrix
+        for (int i = 0; i < numOfInstances; i++) {
+            for (int j = 0; j < numOfClusters; j++) {
+                double sum = 0.0;
+                double dist_ij = 0.0;
+                for (int k = 0; k < sizeOfInstance; k++) {
+                    dist_ij += pow(data[i][k] - centers[j][k], 2);
+                }
+                dist_ij = sqrt(dist_ij) + 1e-6; // Avoid division by zero
+
+                for (int c = 0; c < numOfClusters; c++) {
+                    double dist_ic = 0.0;
+                    for (int k = 0; k < sizeOfInstance; k++) {
+                        dist_ic += pow(data[i][k] - centers[c][k], 2);
+                    }
+                    dist_ic = sqrt(dist_ic) + 1e-6;
+
+                    sum += pow(dist_ij / dist_ic, 2.0 / (m - 1));
+                }
+
+                membership[i][j] = 1.0 / sum;
+            }
+        }
+    }
+
+    return centers; // or return membership too if needed
 }
 
