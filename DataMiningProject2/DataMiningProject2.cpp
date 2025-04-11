@@ -23,10 +23,18 @@ int main(int argc, char* argv[]) {
 	vector<vector<double>> data = getData(fileName);
     //work on the clustering methods
     //1. K Means Clustering
-    vector<vector<double>> cluster = KMeansClustering(data,2,100);
+    cout << endl << "K Means Clustering" << endl;
+    vector<vector<double>> cluster = KMeansClustering(data,5,100);
+    for (int i = 0; i < cluster.size(); i++) {
+        cout << "Cluster " << i << ": ";
+        for (int j = 0; j < cluster[0].size(); j++) {
+            cout << cluster[i][j] << " ";
+        }
+        cout << endl;
+    }
     //2. Fuzzy Logic
     cout << endl << endl << "Fuzzy Logic" << endl;
-    cluster = FuzzyLogic(data, 3, 100);
+    cluster = FuzzyLogic(data, 5, 100);
     for (int i = 0; i < cluster.size(); i++) {
         cout << "Cluster " << i << ": ";
         for (int j = 0; j < cluster[0].size(); j++) {
@@ -145,7 +153,7 @@ vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfC
             break;
         }
         //replace the old clusters
-        for (int i = 0; i < clusters.size(); i++) {
+        /*for (int i = 0; i < clusters.size(); i++) {
             cout << "Cluster " << i << ": ";
             for (int j = 0; j < clusters[i].size(); j++) {
                 cout << clusters[i][j] << " ";
@@ -153,7 +161,7 @@ vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfC
             cout << endl;
             //print the counts
             cout << "Count: " << count[i] << endl;
-        }
+        }*/
 
         
         clusters = newClusters;
