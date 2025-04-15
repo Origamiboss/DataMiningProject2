@@ -48,38 +48,59 @@ vector<vector<double>> getData(string fileName) {
     ifstream file(fileName);
     string line;
 
-    // Read the first and throw away the header
+    // Skip header
     getline(file, line);
 
-    // Create a 2D array with numOfInstances rows and sizeOfInstances columns
     vector<vector<double>> data;
     int dataIndex = 0;
 
-    // Go through the rest of the file and store the data that are doubles, throw everything else out
     while (getline(file, line)) {
         stringstream point(line);
         string newDouble;
-        int index = 0;
-        data.push_back(vector<double>());
+        data.emplace_back();  // Add new row
+
         while (getline(point, newDouble, ',')) {
             try {
                 double newValue = stod(newDouble);
                 if (isnan(newValue))
                     throw runtime_error("NaN Value Detected");
                 data[dataIndex].push_back(newValue);
-                index++;
             }
-            catch (exception e) {
-                //do nothing, throw out bad numbers
+            catch (const exception& e) {
+                // skip bad values
             }
-            
         }
         dataIndex++;
+    }
+
+    if (data.empty()) return data; // avoid divide by zero
+
+    size_t cols = data[0].size();
+    vector<double> Min(cols, INFINITY);
+    vector<double> Max(cols, -INFINITY);
+
+    for (const auto& row : data) {
+        for (size_t j = 0; j < cols; ++j) {
+            Min[j] = min(Min[j], row[j]);
+            Max[j] = max(Max[j], row[j]);
+        }
+    }
+
+    for (auto& row : data) {
+        for (size_t j = 0; j < cols; ++j) {
+            if (Max[j] == Min[j]) {
+                row[j] = 0;
+            }
+            else {
+                row[j] = (row[j] - Min[j]) / (Max[j] - Min[j]);
+            }
+        }
     }
 
     file.close();
     return data;
 }
+
 vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfClusters, int maxNumOfIterations) {
     //start by selecting new clusters
     int numOfInstances = data.size();
@@ -139,19 +160,7 @@ vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfC
                 newClusters[h][j] /= count[h];
             }
         }
-        //check if they changed
-        bool converged = true;
-        for (int h = 0; h < numOfClusters; h++) {
-            if (squaredDistance(newClusters[h], clusters[h]) > .001) {
-                converged = false;
-                break;
-            }
-        }
-        if (converged) {
-            cout << "Clusters converged on iteration: " << i << endl;
-            
-            break;
-        }
+        
         //replace the old clusters
         /*for (int i = 0; i < clusters.size(); i++) {
             cout << "Cluster " << i << ": ";
