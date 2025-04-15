@@ -133,6 +133,9 @@
     <None Include="..\..\..\..\Downloads\Longotor1delta.csv" />
     <None Include="..\..\..\..\Downloads\Longotor1delta.xls" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="ImportantGenes.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

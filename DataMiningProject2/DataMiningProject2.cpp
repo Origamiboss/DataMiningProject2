@@ -9,22 +9,26 @@
 #include<numeric>
 using namespace std;
 
-vector<vector<double>> getData(string fileName);
+vector<vector<double>> getData(string fileName, vector<string>& geneName);
 vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfClusters, int maxNumOfIterations);
 double squaredDistance(vector<double>& x, vector<double>& y);
 vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfClusters, int maxIterations);
+void analyzeGenes(string geneFile, vector<vector<double>>& data, vector<vector<double>>& clusters, vector<string> geneNames);
 
 int main(int argc, char* argv[]) {
-	if (argc != 2) {
+	if (argc != 3) {
 		cout << "INVALID ENTRY: PASS FILE AS ARGUMENT" << endl;
+        cout << "./DataMiningProject2.exe dataFile importantGenes" << endl;
 		return 1;
 	}
 	string fileName = argv[1];
-	vector<vector<double>> data = getData(fileName);
-    //work on the clustering methods
+    string geneFile = argv[2];
+    vector<string> geneNames;
+	vector<vector<double>> data = getData(fileName, geneNames);
+    //Work on the clustering methods
     //1. K Means Clustering
     cout << endl << "K Means Clustering" << endl;
-    vector<vector<double>> cluster = KMeansClustering(data,5,100);
+    vector<vector<double>> cluster = KMeansClustering(data,10,100);
     for (int i = 0; i < cluster.size(); i++) {
         cout << "Cluster " << i << ": ";
         for (int j = 0; j < cluster[0].size(); j++) {
@@ -32,9 +36,12 @@ int main(int argc, char* argv[]) {
         }
         cout << endl;
     }
+    //analyze cluster information
+    analyzeGenes(geneFile, data, cluster, geneNames);
+
     //2. Fuzzy Logic
     cout << endl << endl << "Fuzzy Logic" << endl;
-    cluster = FuzzyLogic(data, 5, 100);
+    cluster = FuzzyLogic(data, 10, 100);
     for (int i = 0; i < cluster.size(); i++) {
         cout << "Cluster " << i << ": ";
         for (int j = 0; j < cluster[0].size(); j++) {
@@ -42,9 +49,11 @@ int main(int argc, char* argv[]) {
         }
         cout << endl;
     }
+    //analyze cluster information
+    analyzeGenes(geneFile, data, cluster, geneNames);
 }
 
-vector<vector<double>> getData(string fileName) {
+vector<vector<double>> getData(string fileName, vector<string>& geneName) {
     ifstream file(fileName);
     string line;
 
@@ -58,8 +67,12 @@ vector<vector<double>> getData(string fileName) {
         stringstream point(line);
         string newDouble;
         data.emplace_back();  // Add new row
-
+        bool gotName = false;
         while (getline(point, newDouble, ',')) {
+            if (!gotName) {
+                geneName.push_back(newDouble);
+                gotName = true;
+            }
             try {
                 double newValue = stod(newDouble);
                 if (isnan(newValue))
@@ -265,3 +278,38 @@ vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfCluster
     return centers;
 }
 
+void analyzeGenes(string geneFile, vector<vector<double>>& data, vector<vector<double>>& clusters, vector<string> geneNames) {
+    vector<vector<string>> geneClusters(clusters.size(), vector<string>());
+
+    //locate which geneNames go into what
+    for (int i = 0; i < data.size(); i++) {
+        double minDist = INFINITY;
+        int clusterId = 0;
+        for (int j = 0; j < clusters.size(); j++) {
+            double dist = squaredDistance(data[i], clusters[j]);
+            if (dist < minDist) {
+                clusterId = j;
+                minDist = dist;
+            }
+        }
+        //save the file
+        geneClusters[clusterId].push_back(geneNames[i]);
+    }
+    //make a set that contains the genes we are looking for
+    set<string> importantGenes;
+    fstream file(geneFile);
+    string line;
+    while (getline(file, line)) {
+        importantGenes.insert(line);
+    }
+
+    //Display the names inside of each cluster
+    for (int i = 0; i < geneClusters.size(); i++) {
+        cout << "Cluster: " << i << endl;
+        for (int j = 0; j < geneClusters[i].size(); j++) {
+            if(importantGenes.find(geneClusters[i][j]) != importantGenes.end())
+                cout << geneClusters[i][j] << " ";
+        }
+        cout << endl;
+    }
+}

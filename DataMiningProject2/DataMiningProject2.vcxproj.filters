@@ -27,4 +27,7 @@
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="ImportantGenes.txt" />
+  </ItemGroup>
 </Project>
