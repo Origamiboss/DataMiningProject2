@@ -9,11 +9,12 @@
 #include<numeric>
 using namespace std;
 
-vector<vector<double>> getData(string fileName, vector<string>& geneName);
+vector<vector<double>> getData(string fileName, string importantGene, vector<string>& geneName);
 vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfClusters, int maxNumOfIterations);
 double squaredDistance(vector<double>& x, vector<double>& y);
 vector<vector<double>> FuzzyLogic(vector<vector<double>>& data, int numOfClusters, int maxIterations);
 void analyzeGenes(string geneFile, vector<vector<double>>& data, vector<vector<double>>& clusters, vector<string> geneNames);
+string trim(const string& str);
 
 int main(int argc, char* argv[]) {
 	if (argc != 3) {
@@ -24,7 +25,7 @@ int main(int argc, char* argv[]) {
 	string fileName = argv[1];
     string geneFile = argv[2];
     vector<string> geneNames;
-	vector<vector<double>> data = getData(fileName, geneNames);
+	vector<vector<double>> data = getData(fileName,geneFile, geneNames);
     //Work on the clustering methods
     //1. K Means Clustering
     cout << endl << "K Means Clustering" << endl;
@@ -53,10 +54,18 @@ int main(int argc, char* argv[]) {
     analyzeGenes(geneFile, data, cluster, geneNames);
 }
 
-vector<vector<double>> getData(string fileName, vector<string>& geneName) {
+vector<vector<double>> getData(string fileName, string importantGene, vector<string>& geneName) {
     ifstream file(fileName);
+    ifstream important(importantGene);
     string line;
-
+    set<string> importantNames;
+    //make a set of the importantGenes
+    while (getline(important, line)) {
+        //save each line into a set
+        importantNames.insert(trim(line));
+    }
+    //close file
+    important.close();
     // Skip header
     getline(file, line);
 
@@ -66,24 +75,24 @@ vector<vector<double>> getData(string fileName, vector<string>& geneName) {
     while (getline(file, line)) {
         stringstream point(line);
         string newDouble;
+        getline(point, newDouble, ','); // get the gene name
+
+        if (importantNames.find(newDouble) == importantNames.end()) {
+            continue; // skip the whole row if not important
+        }
+
+        geneName.push_back(newDouble);
         data.emplace_back();  // Add new row
-        bool gotName = false;
         while (getline(point, newDouble, ',')) {
-            if (!gotName) {
-                geneName.push_back(newDouble);
-                gotName = true;
-            }
             try {
                 double newValue = stod(newDouble);
-                if (isnan(newValue))
-                    throw runtime_error("NaN Value Detected");
-                data[dataIndex].push_back(newValue);
+                if (!isnan(newValue))
+                    data.back().push_back(newValue);
             }
-            catch (const exception& e) {
-                // skip bad values
+            catch (...) {
+                // Ignore conversion errors
             }
         }
-        dataIndex++;
     }
 
     if (data.empty()) return data; // avoid divide by zero
@@ -113,7 +122,13 @@ vector<vector<double>> getData(string fileName, vector<string>& geneName) {
     file.close();
     return data;
 }
-
+string trim(const string& str) {
+    size_t first = str.find_first_not_of(" \t\n\r");
+    if (first == string::npos)
+        return "";
+    size_t last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, (last - first + 1));
+}
 vector<vector<double>> KMeansClustering(vector<vector<double>>& data, int numOfClusters, int maxNumOfIterations) {
     //start by selecting new clusters
     int numOfInstances = data.size();
