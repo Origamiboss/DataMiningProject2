@@ -315,7 +315,7 @@ void analyzeGenes(string geneFile, vector<vector<double>>& data, vector<vector<d
     fstream file(geneFile);
     string line;
     while (getline(file, line)) {
-        importantGenes.insert(line);
+        importantGenes.insert(trim(line));
     }
 
     //Display the names inside of each cluster
